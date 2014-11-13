@@ -1,0 +1,41 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Monte Carlo Pi Estimation</title>
+
+    <!--[if lt IE 9]>
+        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+    <h1>Monte Carlo Pi Simulation</h1>
+
+    <p>In this test, we are attempting to use monte carlo simulation to estimate the value of pi. We start with a square (lenth=width=height=2), and inscribe a unit circle inside of it (r=1.0). This means the area of the circle is pi, and the area of the square is 4. Put as a ratio (called p) of area of circle compared to area of square, we have p = pi/4. So, what we want to do is estimate the ratio with monte carlo simulation, and multiply it by 4 -- thus giving an estimation of pi.</p>
+
+    <p>We will be using html5 canvas. See how the pretty circle is in the pretty box? Good. When you click the "Run Simulation" button below, we will run a number of iterations (that you control) and estimate pi.</p>
+
+    <br/><br/>
+
+    <canvas id='canvas' width='400' height='400'>
+      Canvas required. Stop using ie6.
+    </canvas>
+
+    <div class="estimateData">
+        Iteration: <span id="iteration">0</span><br/>
+        Num Points: <span id="numPoints">0</span><br/>
+        Num In Circle: <span id="numInCircle">0</span><br/>
+        Ratio: <span id="ratio">0</span><br/>
+        Pi Estimate: <span id="estimate">0</span><br/>
+    </div>
+
+    <div class="config">
+        Number of iterations: <input type="text" id="numIters" value="1000"/> <br/>
+        <input type="button" id="mc-run" value="Run Simulation" />
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
