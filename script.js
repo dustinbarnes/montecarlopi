@@ -1,97 +1,101 @@
-var canvas = document.getElementById("canvas");
-var context = canvas.getContext("2d");
-var iteration = document.getElementById("iteration");
-var numPoints = document.getElementById("numPoints");
-var numInCircle = document.getElementById("numInCircle");
-var estimate = document.getElementById("estimate");
-var ratio = document.getElementById("ratio");
-var numIters = document.getElementById("numIters");
-var runButton = document.getElementById("mc-run");
-var radius = canvas.width / 2;
-var drawDelay = 1;
+$(function() {
+    var Simulation = function() {
+        var canvas = $("#canvas")[0];
+        var context = canvas.getContext("2d");
+        var radius = canvas.width / 2;
+        var ratioExpected = 0.785398;
+        var totalPoints = 0;
+        var pointsInCircle = 0;
+        var iterations = parseInt($("#numIterations").val());
+        var numInCircleExpected = Math.floor(iterations * ratioExpected);
 
-var totalPoints = 0;
-var pointsInCircle = 0;
-var iters = 0;
-var thisIter = 0;
+        canvas.width = canvas.width;
+        drawCircle();
+        drawBox();
+        $("#numPointsExpected").text(iterations);
+        $("#numInCircleExpected").text(numInCircleExpected);
+        $("#ratioExpected").text(ratioExpected);
 
-function drawCircle() {
-   context.beginPath();
-   context.arc(radius, radius, radius, 0, Math.PI*2, true);
-   context.stroke();
-}
+        this.run = function() {
+            step();
+        }
 
-function drawBox() {
-    context.rect(0, 0, canvas.width, canvas.height);
-    context.stroke();
-}
+        function step() {
+            totalPoints++;
 
-function initDraw() {
-    // sneaky way of totally clearing canvas state
-    canvas.width = canvas.width;
-    totalPoints = 0;
-    pointsInCircle = 0;
-    iters = 0 + numIters.value;
+            // Let's pick a random point in the grid.
+            var x = randomPointComponent();
+            var y = randomPointComponent();
+            var color = "#ff0000";
 
-    // Draw our initial stuff.
-    drawBox();
-    drawCircle();
-}
+            var inCircle = false;
 
-function randomPointComponent() {
-    // max = canvas width, min = 0.
-    return (Math.random() * canvas.width);
-}
+            if ( isInCircle(x, y) ) {
+                color = "#00ff00";
+                pointsInCircle++;
+            }
 
-// Pythagorean theorem: x^2 + y^2 = r^2. If <= r^2, in circle.
-function isInCircle(x, y) {
-    var magX = Math.pow(x - radius, 2);
-    var magY = Math.pow(y - radius, 2);
-    var rSquared = Math.pow(radius, 2);
+            drawPoint(x, y, color);
+            update();
 
-    return magX + magY <= rSquared;
-}
+            if ( totalPoints < iterations )
+                window.setTimeout(step, 1);
+        }
 
-function drawPoint(x, y, color) {
-    context.beginPath();
-    context.arc(x, y, 3, 0, 2*Math.PI, false);
-    context.fillStyle = color;
-    context.fill();
-}
+        function update() {
+            $("#numPointsActual").text(totalPoints);
+            $("#numInCircleActual").text(pointsInCircle);
+            $("#numInCircleError").text(errorPct(numInCircleExpected, pointsInCircle));
 
-function createPoint() {
-    // Let's pick a random point in the grid.
-    var x = randomPointComponent();
-    var y = randomPointComponent();
-    var color = "#ff0000";
+            var ratio = pointsInCircle / totalPoints;
+            $("#ratioActual").text(ratio.toFixed(6));
+            $("#ratioError").text(errorPct(ratioExpected, ratio));
 
-    totalPoints++;
+            $("#piActual").text((ratio * 4).toFixed(6));
+            $("#piError").text(errorPct(Math.PI, ratio*4));
+        };
 
-    if ( isInCircle(x, y) ) {
-        color = "#00ff00";
-        pointsInCircle++;
-    }
+        function errorPct(expected, actual) {
+            return (Math.abs(expected - actual)/Math.abs(expected) * 100).toFixed(6);
+        }
 
-    drawPoint(x, y, color);
-}
+        function drawPoint(x, y, color) {
+            context.beginPath();
+            context.arc(x, y, 1, 0, 2*Math.PI, false);
+            context.fillStyle = color;
+            context.fill();
+        }
 
-function simulationStep() {
-    thisIter++;
+        function randomPointComponent() {
+            // max = canvas width, min = 0.
+            return (Math.random() * canvas.width);
+        }
 
-    createPoint();
+        // Pythagorean theorem: x^2 + y^2 = r^2. If <= r^2, in circle.
+        function isInCircle(x, y) {
+            var magX = Math.pow(x - radius, 2);
+            var magY = Math.pow(y - radius, 2);
+            var rSquared = Math.pow(radius, 2);
 
-    iteration.innerHTML = thisIter;
-    numPoints.innerHTML = totalPoints;
-    numInCircle.innerHTML = pointsInCircle;
-    ratio.innerHTML = (pointsInCircle/totalPoints);
-    estimate.innerHTML = 4 * (pointsInCircle/totalPoints);
+            return magX + magY <= rSquared;
+        }
 
-    if ( thisIter <= iters )
-        setTimeout(simulationStep, drawDelay);
-}
+        function drawCircle() {
+           context.beginPath();
+           context.arc(radius, radius, radius, 0, Math.PI*2, true);
+           context.stroke();
+        }
 
-runButton.addEventListener('click', function() {
-    initDraw();
-    simulationStep();
+        function drawBox() {
+            context.beginPath();
+            context.rect(0, 0, canvas.width, canvas.height);
+            context.stroke();
+        }
+    };
+
+    var simulation = new Simulation();
+
+    $("#run").click(function() {
+        (new Simulation()).run();
+    })
 });
-window.addEventListener('load', initDraw);
