@@ -1,78 +1,440 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monte Carlo Pi Estimation</title>
+    <style>
+        /* Solarized Theme Colors */
+        :root {
+            /* Base colors */
+            --base03: #002b36;
+            --base02: #073642;
+            --base01: #586e75;
+            --base00: #657b83;
+            --base0: #839496;
+            --base1: #93a1a1;
+            --base2: #eee8d5;
+            --base3: #fdf6e3;
+            
+            /* Accent colors */
+            --yellow: #b58900;
+            --orange: #cb4b16;
+            --red: #dc322f;
+            --magenta: #d33682;
+            --violet: #6c71c4;
+            --blue: #268bd2;
+            --cyan: #2aa198;
+            --green: #859900;
+            
+            /* Light theme defaults */
+            --bg-color: var(--base3);
+            --bg-highlight: var(--base2);
+            --text-color: var(--base00);
+            --text-emphasis: var(--base01);
+            --canvas-border: var(--base1);
+            --card-bg: var(--base2);
+            --inside-point: var(--green);
+            --outside-point: var(--orange);
+            --button-bg: var(--blue);
+            --button-text: var(--base3);
+            --disabled-button: var(--base1);
+            --circle-color: var(--base01);
+            --toggle-bg: var(--base1);
+        }
 
-    <!--[if lt IE 9]>
-        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+        .dark-mode {
+            /* Dark theme overrides */
+            --bg-color: var(--base03);
+            --bg-highlight: var(--base02);
+            --text-color: var(--base0);
+            --text-emphasis: var(--base1);
+            --canvas-border: var(--base01);
+            --card-bg: var(--base02);
+            --inside-point: var(--cyan);
+            --outside-point: var(--red);
+            --button-bg: var(--blue);
+            --button-text: var(--base3);
+            --disabled-button: var(--base01);
+            --circle-color: var(--base1);
+            --toggle-bg: var(--base01);
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1, h2 {
+            color: var(--text-emphasis);
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            border: 1px solid var(--canvas-border);
+            margin: 20px 0;
+            transition: border-color 0.3s;
+            background-color: var(--bg-color);
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+            background-color: var(--bg-highlight);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        button {
+            background-color: var(--button-bg);
+            border: none;
+            color: var(--button-text);
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        button:disabled {
+            background-color: var(--disabled-button);
+            cursor: not-allowed;
+        }
+        input {
+            padding: 8px;
+            margin: 0 10px;
+            width: 100px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--canvas-border);
+            border-radius: 4px;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .results {
+            display: flex;
+            justify-content: space-between;
+            width: 400px;
+            margin: 20px 0;
+            font-size: 18px;
+            background-color: var(--bg-highlight);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .explanation {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            transition: background-color 0.3s;
+        }
+        .speed-control {
+            margin-top: 10px;
+        }
+        .theme-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-highlight);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        .theme-switch label {
+            margin-right: 10px;
+            color: var(--text-emphasis);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--toggle-bg);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--bg-color);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--blue);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        @media (max-width: 600px) {
+            .theme-switch {
+                position: static;
+                margin: 10px 0;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
-
 <body>
-    <div class="container" role="main">
-        <h1>Monte Carlo Pi Simulation</h1>
+    <div class="container">
+        <div class="theme-switch">
+            <label for="darkModeToggle">Solarized Dark</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
 
-        <p>In this test, we are attempting to use monte carlo simulation to estimate the value of pi. We start with a square (lenth=width=height=2), and inscribe a unit circle inside of it (r=1.0). This means the area of the circle is pi, and the area of the square is 4. Put as a ratio (called p) of area of circle compared to area of square, we have p = pi/4. So, what we want to do is estimate the ratio with monte carlo simulation, and multiply it by 4 -- thus giving an estimation of pi.</p>
-
-        <p>We will be using html5 canvas. See how the pretty circle is in the pretty box? Good. When you click the "Run Simulation" button below, we will run a number of iterations (that you control) and estimate pi.</p>
-
-        <br/><br/>
-
-        <div class="container">
-            <div class="col-md-6">
-                <canvas id='canvas' width='400' height='400'>Canvas required</canvas>
+        <h1>Monte Carlo Method to Estimate π</h1>
+        
+        <div class="controls">
+            <label for="pointCount">Number of points:</label>
+            <input type="number" id="pointCount" value="1000" min="1" max="100000">
+            <button id="runBtn">Run Simulation</button>
+            <button id="stopBtn" disabled>Stop</button>
+            <button id="resetBtn">Reset</button>
+            <div class="speed-control">
+                <label for="speed">Speed:</label>
+                <input type="range" id="speed" min="1" max="100" value="10">
+                <span id="speedValue">10 points/frame</span>
             </div>
-
-            <div class="col-md-6">
-                <table class="table">
-                    <thead>
-                        <tr><td>&nbsp;</td><td>Expected</td><td>Actual</td><td>Error %</td></tr>
-                    </thead>
-
-                    <tbody>
-                        <tr>
-                            <td>Num Points</td>
-                            <td><span id="numPointsExpected">0</span></td>
-                            <td><span id="numPointsActual">0</span></td>
-                            <td>&mdash;</td>
-                        </tr>
-                        <tr>
-                            <td>Num in Circle</td>
-                            <td><span id="numInCircleExpected">0</span></td>
-                            <td><span id="numInCircleActual">0</span></td>
-                            <td><span id="numInCircleError">0</span></td>
-                        </tr>
-                        <tr>
-                            <td>Ratio</td>
-                            <td><span id="ratioExpected">0</span></td>
-                            <td><span id="ratioActual">0</span></td>
-                            <td><span id="ratioError">0</span></td>
-                        </tr>
-                        <tr>
-                            <td>Pi</td>
-                            <td><span id="piExpected">3.141593</span></td>
-                            <td><span id="piActual">0</span></td>
-                            <td><span id="piError">0</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <br/><br/><br/>
-
-                <div class="config">
-                    Number of iterations: <input type="text" id="numIterations" value="1000"/> <br/>
-                    <button type="button" id="run" class="btn btn-large btn-success">Run Simulation</button>
-                </div>
-            </div>
+        </div>
+        
+        <canvas id="simulationCanvas" width="400" height="400"></canvas>
+        
+        <div class="results">
+            <div>Points inside circle: <span id="insideCount">0</span></div>
+            <div>Total points: <span id="totalCount">0</span></div>
+            <div>π estimate: <span id="piEstimate">0</span></div>
+        </div>
+        
+        <div class="explanation">
+            <h2>How it Works</h2>
+            <p>This simulation uses the Monte Carlo method to estimate the value of π. Here's the basic idea:</p>
+            <ol>
+                <li>We draw a square of side length 2r and a circle with radius r inscribed in it.</li>
+                <li>The area of the square is (2r)² = 4r².</li>
+                <li>The area of the circle is πr².</li>
+                <li>The ratio of these areas is π/4.</li>
+                <li>We randomly place points inside the square and count how many fall inside the circle.</li>
+                <li>As the number of points increases, the ratio of points inside the circle to total points approaches π/4.</li>
+                <li>Multiplying this ratio by 4 gives us an estimate of π.</li>
+            </ol>
+            <p>The more points we use, the more accurate our estimate becomes!</p>
         </div>
     </div>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        const runBtn = document.getElementById('runBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const pointCountInput = document.getElementById('pointCount');
+        const speedSlider = document.getElementById('speed');
+        const speedValue = document.getElementById('speedValue');
+        const insideCountElement = document.getElementById('insideCount');
+        const totalCountElement = document.getElementById('totalCount');
+        const piEstimateElement = document.getElementById('piEstimate');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        
+        const canvasSize = canvas.width;
+        const radius = canvasSize / 2;
+        const centerX = radius;
+        const centerY = radius;
+        
+        let insideCount = 0;
+        let totalCount = 0;
+        let animationId = null;
+        let remainingPoints = 0;
+        let pointsPerFrame = 10;
+        let isDarkMode = false;
+        
+        // Initialize with system preference (default to light mode if no preference)
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            darkModeToggle.checked = true;
+            document.body.classList.add('dark-mode');
+            isDarkMode = true;
+        } else {
+            // Default to Solarized Light
+            darkModeToggle.checked = false;
+            document.body.classList.remove('dark-mode');
+            isDarkMode = false;
+        }
+        
+        // Dark mode toggle handler
+        darkModeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode');
+            isDarkMode = darkModeToggle.checked;
+            redrawCanvas();
+        });
+        
+        // Initialize the canvas
+        function initCanvas() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+            
+            redrawCanvas();
+            
+            // Reset counters
+            insideCount = 0;
+            totalCount = 0;
+            updateDisplay();
+        }
+        
+        function redrawCanvas() {
+            // Clear canvas first
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+            
+            // Fill background (Solarized base3 for light, base03 for dark)
+            ctx.fillStyle = isDarkMode ? '#002b36' : '#fdf6e3';
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+            
+            // Draw square
+            ctx.strokeStyle = isDarkMode ? '#93a1a1' : '#586e75';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, canvasSize, canvasSize);
+            
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = isDarkMode ? '#93a1a1' : '#586e75';
+            ctx.stroke();
+            
+            // Redraw all points
+            const insideColor = isDarkMode ? '#2aa198' : '#859900'; // cyan (dark) or green (light)
+            const outsideColor = isDarkMode ? '#dc322f' : '#cb4b16'; // red (dark) or orange (light)
+            
+            // We'll keep track of the existing points and redraw them
+            if (window.pointsData && window.pointsData.length > 0) {
+                for (const point of window.pointsData) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+                    ctx.fillStyle = point.isInside ? insideColor : outsideColor;
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // Store point data for redrawing
+        window.pointsData = [];
+        
+        function generatePoints(count) {
+            // Generate points one at a time
+            if (count <= 0) {
+                runBtn.disabled = false;
+                stopBtn.disabled = true;
+                return;
+            }
+            
+            // Calculate how many points to add this frame
+            const pointsThisFrame = Math.min(count, pointsPerFrame);
+            
+            const insideColor = isDarkMode ? '#2aa198' : '#859900'; // cyan (dark) or green (light)
+            const outsideColor = isDarkMode ? '#dc322f' : '#cb4b16'; // red (dark) or orange (light)
+            
+            for (let i = 0; i < pointsThisFrame; i++) {
+                // Generate random coordinates within the square
+                const x = Math.random() * canvasSize;
+                const y = Math.random() * canvasSize;
+                
+                // Calculate distance from center
+                const distanceFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                
+                // Check if point is inside circle
+                const isInside = distanceFromCenter <= radius;
+                
+                // Store point data for redrawing
+                window.pointsData.push({ x, y, isInside });
+                
+                // Draw point
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = isInside ? insideColor : outsideColor;
+                ctx.fill();
+                
+                // Update counters
+                if (isInside) {
+                    insideCount++;
+                }
+                totalCount++;
+            }
+            
+            updateDisplay();
+            
+            // Continue animation
+            remainingPoints = count - pointsThisFrame;
+            animationId = requestAnimationFrame(() => generatePoints(remainingPoints));
+        }
+        
+        function updateDisplay() {
+            insideCountElement.textContent = insideCount;
+            totalCountElement.textContent = totalCount;
+            
+            // Calculate Pi estimate
+            const piEstimate = totalCount > 0 ? (4 * insideCount / totalCount) : 0;
+            piEstimateElement.textContent = piEstimate.toFixed(6);
+        }
+
+        function stopSimulation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            runBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+        
+        // Event listeners
+        runBtn.addEventListener('click', () => {
+            const pointCount = parseInt(pointCountInput.value, 10) || 1000;
+            remainingPoints = pointCount;
+            runBtn.disabled = true;
+            stopBtn.disabled = false;
+            generatePoints(pointCount);
+        });
+        
+        stopBtn.addEventListener('click', stopSimulation);
+        
+        resetBtn.addEventListener('click', () => {
+            stopSimulation();
+            window.pointsData = []; // Clear stored points
+            initCanvas();
+        });
+        
+        speedSlider.addEventListener('input', () => {
+            pointsPerFrame = parseInt(speedSlider.value, 10);
+            speedValue.textContent = `${pointsPerFrame} points/frame`;
+        });
+        
+        // Initialize on load
+        initCanvas();
+    </script>
 </body>
 </html>
